@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Attendance</title> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css"> <style>
+        /* This internal style block is maintained for page-specific element styles */
+        :root {
+            --color-primary: #FF5722;   /* New: Deep Orange */
+            --color-secondary: #212121;  /* New: Near Black Accent */
+            --color-success: #4CAF50; 
+            --color-absent: #FF9800; 
+            --color-edit: #FFC107; 
+            --color-delete: #F44336; 
+            --color-white: #ffffff;
+            --color-light-gray: #FAFAFA; /* New: Very Light Off-White Background */
+            --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { font-family: Arial, sans-serif; background-color: var(--color-light-gray); line-height: 1.6; }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+        /* --- Header Styling (Adjusted for all elements) --- */
+        .app-header {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            padding: 15px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-title-group { text-align: center; flex-grow: 1; padding: 0 10px; }
+        .app-header h1 { font-size: 1.2em; margin-top: 5px; }
+        .app-header .logo i { font-size: 1.5em; }
+
+        .back-btn {
+            color: var(--color-white);
+            font-size: 1.5em;
+            text-decoration: none;
+            padding: 5px;
+            flex-shrink: 0;
+        }
+        
+        /* Logout Button Style for Header */
+        .logout-btn {
+            background: none; 
+            border: none; 
+            color: var(--color-white); 
+            padding: 5px; 
+            font-size: 1.5em; 
+            cursor: pointer;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+        .logout-btn:hover {
+            color: var(--color-secondary);
+        }
+
+        .class-title {
+            font-size: 1.4em;
+            margin: 10px 0;
+            color: var(--color-primary);
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* --- Card & Form Styling --- */
+        .card { background-color: var(--color-white); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: var(--card-shadow); }
+        .card h2 { color: var(--color-primary); font-size: 1.2em; margin-bottom: 15px; border-bottom: 2px solid var(--color-light-gray); padding-bottom: 10px; }
+        .card h3 { color: var(--color-primary); margin-top: 15px; font-size: 1em; margin-bottom: 8px; }
+
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+        .btn-primary { background-color: var(--color-primary); color: var(--color-white); width: 100%; }
+        .btn-primary:hover { background-color: #E64A19; } /* Darker Orange */
+        .btn-present { background-color: var(--color-success); color: var(--color-white); }
+        .btn-absent { background-color: var(--color-delete); color: var(--color-white); } /* Red for Absent */
+        
+        /* --- Form Input Styling --- */
+        .student-form input[type="text"],
+        .student-form input[type="tel"],
+        .student-form input[type="email"],
+        .student-form input[type="date"],
+        .student-form textarea,
+        .student-form select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        .student-form select {
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20d%3D%22M6%209l4-4H2z%22%20fill%3D%22%23212121%22%2F%3E%3C%2Fsvg%3E"); 
+            background-repeat: no-repeat; 
+            background-position: right 10px center;
+        }
+
+        /* --- Photo Upload Styling --- */
+        .photo-upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 15px; }
+        .photo-upload-box input[type="file"] { display: none; }
+        .photo-upload-label { display: inline-block; background-color: #f0f0f0; padding: 10px 20px; border-radius: 5px; cursor: pointer; color: #333; font-weight: bold; }
+        
+        /* --- Attendance Table & Details Styling --- */
+        .attendance-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .attendance-table th, .attendance-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        .attendance-table th { background-color: var(--color-primary); color: var(--color-white); font-weight: normal; }
+        .student-name-link { cursor: pointer; color: var(--color-primary); font-weight: bold; }
+
+        .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); padding-top: 60px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        
+        /* Two-column detail row style */
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #eee; font-size: 0.95em; }
+        #detailPhoto { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid var(--color-secondary); }
+
+        /* Individual Action Buttons in Table */
+        .action-btns button {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 5px;
+            color: var(--color-white);
+        }
+        .btn-edit { background-color: var(--color-edit); }
+        .btn-edit:hover { background-color: #e6a700; }
+        .btn-delete { background-color: var(--color-delete); }
+        .btn-delete:hover { background-color: #c0392b; }
+        
+        /* --- Statistics & Bulk Actions --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box {
+            padding: 10px;
+            border-radius: 8px;
+            background-color: var(--color-light-gray);
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .stat-box span { color: var(--color-primary); font-size: 1.2em; }
+        .bulk-actions { display: flex; gap: 10px; }
+        .bulk-actions button { width: 50%; }
+
+        /* --- ID Card Styles (New/Updated for Orange-Black Theme & New Fields) --- */
+        .id-card-container {
+            width: 300px;
+            height: 500px; /* Increased height to fit more info */
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background-color: var(--color-white);
+            color: var(--color-secondary);
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            padding: 0;
+        }
+
+        .id-card-header {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            padding: 15px 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .id-card-header h4 { margin: 0; font-size: 1.1em; }
+        .id-card-header p { margin: 5px 0 0 0; font-size: 0.8em; opacity: 0.8; }
+
+        .id-card-body {
+            flex-grow: 1;
+            padding: 20px 15px 10px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .id-card-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 4px solid var(--color-secondary);
+        }
+
+        .id-card-info {
+            width: 100%;
+            text-align: left;
+        }
+        .id-card-info div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dashed #ddd;
+            font-size: 0.8em;
+        }
+        .id-card-info strong {
+            color: var(--color-secondary);
+            font-weight: bold;
+            font-size: 1em;
+            text-align: right;
+            max-width: 60%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .id-card-info span {
+            color: #777;
+            font-weight: normal;
+            font-size: 0.9em;
+            max-width: 40%;
+        }
+
+        .id-card-id-large {
+            font-size: 2.5em;
+            font-weight: 900;
+            color: var(--color-primary);
+            margin: 10px 0;
+            padding: 0 15px;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .id-card-footer {
+            background-color: var(--color-secondary);
+            color: var(--color-white);
+            padding: 8px;
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <a href="index.html" class="back-btn" title="Back to Class Selection">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="header-title-group">
+            <div class="logo">
+                <i class="fas fa-school"></i>
+                <h1 id="appTitle">የመሠረተ ሕይወት ሰንበት ት/ቤት</h1>
+            </div>
+            <div class="date-display">
+                <i class="far fa-calendar-alt"></i> <span id="currentDateDisplay"></span>
+            </div>
+        </div>
+        <div id="language-toggle" class="language-toggle">
+            <button class="btn btn-lang active" data-lang="am">አማርኛ</button>
+            <button class="btn btn-lang" data-lang="en">English</button>
+        </div>
+        <button id="logoutBtn" class="logout-btn" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+    </header>
+
+    <main class="container">
+        <h2 id="currentClassTitle" class="class-title"></h2>
+
+        <section class="card add-student-section">
+            <h2><i class="fas fa-user-plus"></i> Student Management</h2>
+            <button id="openStudentModalBtn" class="btn btn-primary" style="width:100%; margin-bottom: 15px;">
+                <i class="fas fa-plus-circle"></i> Add New Student
+            </button>
+        </section>
+
+        <section class="card statistics-section">
+            <h2><i class="fas fa-chart-bar"></i> Class Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-box" id="totalStudentsBox">Total Students: <span id="totalStudents">0</span></div>
+                <div class="stat-box present" id="presentCountBox">Present Today: <span id="presentCount">0</span></div>
+                <div class="stat-box absent" id="absentCountBox">Absent Today: <span id="absentCount">0</span></div>
+                <div class="stat-box rate" id="attendanceRateBox">Attendance Rate: <span id="attendanceRate">0%</span></div>
+            </div>
+
+            <div class="bulk-actions">
+                <button class="btn btn-present"><i class="fas fa-check"></i> Mark All Present</button>
+                <button class="btn btn-absent"><i class="fas fa-times"></i> Mark All Absent</button>
+            </div>
+        </section>
+
+        <section class="card attendance-section">
+            <h2><i class="fas fa-users"></i> Student Attendance List</h2>
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th id="headerID">ID</th>
+                        <th id="headerName">Student Name</th>
+                        <th class="status-col" id="headerStatus">Status</th>
+                        <th id="headerActions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentListBody">
+                    </tbody>
+            </table>
+        </section>
+
+        <section class="card export-section">
+            <h2><i class="fas fa-download"></i> Export Attendance Data</h2>
+            <div class="export-options">
+                <button class="btn btn-export pdf"><i class="far fa-file-pdf"></i> Export as PDF</button>
+                </div>
+        </section>
+
+    </main>
+    
+    <div id="studentFormModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn add-close-btn">&times;</span>
+            <h2 id="modalTitle"><i class="fas fa-user-plus"></i> Student Registration</h2>
+            
+            <form id="addStudentForm" class="student-form">
+                
+                <input type="hidden" id="studentIdToEdit">
+                
+                <h3>Photo</h3>
+                <div class="photo-upload-box">
+                    <input type="file" id="studentPhoto" accept="image/*" capture="camera">
+                    <label for="studentPhoto" class="photo-upload-label">
+                        <i class="fas fa-camera"></i> Take/Upload Photo
+                    </label>
+                    <p id="photoFileName" style="font-size: 0.8em; margin-top: 5px; color:#555;">No file selected</p>
+                    <img id="currentStudentPhoto" src="" alt="Current Photo" style="max-width: 100px; max-height: 100px; margin-top: 10px; border-radius: 8px; display: none;">
+                </div>
+                
+                <h3>Student Info</h3>
+                <input type="text" id="studentName" placeholder="Student Full Name (የተማሪ ሙሉ ስም)" required>
+                <input type="text" id="nickname" placeholder="Nickname (የተማሪ ቅጽል ስም)"> <select id="gender" required>
+                    <option value="">Select Gender (ፆታ)</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+                <input type="date" id="dob" title="Date of Birth (DOB)" placeholder="Date of Birth (የትውልድ ቀን)" required>
+                <input type="tel" id="studentPhone" placeholder="Student Phone Number (የተማሪ ስልክ ቁጥር) (e.g., 0911223344)">
+                
+                <h3>Parent/Guardian Info</h3>
+                <input type="text" id="motherName" placeholder="Mother Full Name (የእናት ስም)">
+                <input type="tel" id="motherPhone" placeholder="Mother Phone Number (የእናት ስልክ ቁጥር)">
+                <input type="text" id="fatherName" placeholder="Father Full Name (የአባት ስም)">
+                <input type="tel" id="fatherPhone" placeholder="Father Phone Number (የአባት ስልክ ቁጥር)">
+                
+                <h3>Emergency Contact/Medical</h3>
+                <input type="text" id="emergencyContactName" placeholder="Emergency Contact Name">
+                <input type="tel" id="emergencyContactPhone" placeholder="Emergency Contact Phone">
+                <textarea id="medicalNotes" placeholder="Medical Notes/Allergies" rows="3"></textarea>
+
+                <button type="submit" id="submitButton" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Add Student
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="studentDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn detail-close-btn">&times;</span>
+            <div style="text-align: center;">
+                <img id="detailPhoto" src="" alt="Student Photo">
+                <h2 id="detailStudentName">Student Full Details</h2>
+            </div>
+            <div id="studentDetailsContent">
+                </div>
+            <button id="generateIdCardBtn" class="btn btn-primary" data-id="" style="margin-top: 20px;"><i class="fas fa-id-card"></i> Generate ID Card</button>
+            <button class="btn btn-secondary" style="margin-top: 10px; background-color: #ccc; color: #333;" onclick="document.getElementById('studentDetailsModal').style.display='none'">Close</button>
+        </div>
+    </div>
+    
+    <div id="idCardModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn idcard-close-btn">&times;</span>
+            <div id="idCardContent"> 
+                </div>
+            <button class="btn btn-primary print-btn" onclick="window.print()" style="width: 100%; margin-top: 20px;"><i class="fas fa-print"></i> Print ID Card</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">የመሠረተ ሕይወት ሰንበት ት/ቤት - Class Selection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css"> <style>
+        /* Add the :root block for color consistency */
+        :root {
+            --color-primary: #FF5722;   /* New: Deep Orange */
+            --color-secondary: #212121;  /* New: Near Black Accent */
+            --color-white: #ffffff;
+            --color-light-gray: #FAFAFA; /* New: Very Light Off-White Background */
+        }
+        
+        /* Existing CSS from original file, but main styles moved to styles.css */
+        
+        /* Specific header style for Index.html to manage toggle and logout */
+        .app-header {
+            position: relative; 
+            padding: 15px 20px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+        .app-header h1 {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .logout-btn {
+            position: absolute; 
+            top: 15px; 
+            right: 15px; 
+            background: none; 
+            border: 1px solid var(--color-white); 
+            color: var(--color-white); 
+            padding: 5px 10px; 
+            font-size: 0.8em;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .class-section {
+            background-color: var(--color-white);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background-color: var(--color-secondary);
+            color: var(--color-white);
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .class-list a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        .class-list a:hover {
+            background-color: var(--color-light-gray);
+        }
+        .class-list a:last-child {
+            border-bottom: none;
+        }
+        .class-list a i {
+            color: var(--color-primary);
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div id="language-toggle" class="language-toggle" style="justify-content: center; margin-bottom: 10px;">
+            <button class="btn btn-lang active" data-lang="am">አማርኛ</button>
+            <button class="btn btn-lang" data-lang="en">English</button>
+        </div>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-school"></i>
+                <h1 id="appTitle">የመሠረተ ሕይወት ሰንበት ት/ቤት</h1>
+            </div>
+        </div>
+        <button id="logoutBtn" class="logout-btn" title="Logout">Logout</button>
+    </header>
+
+    <main class="container">
+        <section class="class-section">
+            <div class="section-header" id="kircosHeader">
+                <i class="fas fa-child"></i> ምድብ ቂርቆስ ክፍል
+            </div>
+            <div class="class-list">
+                <a href="class.html?class=ምድብ ቂርቆስ ፩">
+                    <span>ምድብ ቂርቆስ ፩</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="class.html?class=ምድብ ቂርቆስ ፪">
+                    <span>ምድብ ቂርቆስ ፪</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="class.html?class=ምድብ ቂርቆስ ፫">
+                    <span>ምድብ ቂርቆስ ፫</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </section>
+
+        <section class="class-section">
+            <div class="section-header" id="samuelHeader">
+                <i class="fas fa-users"></i> ማዕከላዊያን ክፍል
+            </div>
+            <div class="class-list">
+                <a href="class.html?class=ምድብ ሳሙኤል ፩">
+                    <span>ምድብ ሳሙኤል ፩</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="class.html?class=ምድብ ሳሙኤል ፪">
+                    <span>ምድብ ሳሙኤል ፪</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="class.html?class=ምድብ እስጢፋኖስ">
+                    <span>ምድብ እስጢፋኖስ</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </section>
+
+        <section class="class-section">
+            <div class="section-header" id="yaredHeader">
+                <i class="fas fa-graduation-cap"></i> ወጣት ክፍል
+            </div>
+            <div class="class-list">
+                <a href="class.html?class=ምድብ ቅዱስ ያሬድ ፩">
+                    <span>ምድብ ቅዱስ ያሬድ ፩</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="class.html?class=ምድብ ቅዱስ ያሬድ ፪">
+                    <span>ምድብ ቅዱስ ያሬድ ፪</span>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        // Check if the user is logged in. If not, redirect to the login page.
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+        
+        // This script block is only for Index.html, and uses global functions from script.js
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = localStorage.getItem('currentLang') || 'am';
+            
+            // --- Index Page Language Toggle Logic ---
+            const DICTIONARY = { // Duplicating for simplicity in a multi-file setup
+                'am': { 'app_title': 'የመሠረተ ሕይወት ሰንበት ት/ቤት' },
+                'en': { 'app_title': 'MHS Sunday School' }
+            };
+
+            document.getElementById('appTitle').textContent = DICTIONARY[currentLang].app_title;
+            const activeBtn = document.querySelector(`[data-lang="${currentLang}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            const toggleButtons = document.querySelectorAll('.btn-lang');
+            toggleButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const lang = e.target.dataset.lang;
+                    localStorage.setItem('currentLang', lang);
+                    document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    document.getElementById('appTitle').textContent = DICTIONARY[lang].app_title;
+                    document.getElementById('pageTitle').textContent = DICTIONARY[lang].app_title + (lang === 'en' ? ' - Class Selection' : ' - ክፍል መምረጫ');
+
+                    // Translate section headers
+                    if (lang === 'en') {
+                        document.getElementById('kircosHeader').innerHTML = '<i class="fas fa-child"></i> Kircos Classes';
+                        document.getElementById('samuelHeader').innerHTML = '<i class="fas fa-users"></i> Central Classes';
+                        document.getElementById('yaredHeader').innerHTML = '<i class="fas fa-graduation-cap"></i> Youth Classes';
+                    } else {
+                        document.getElementById('kircosHeader').innerHTML = '<i class="fas fa-child"></i> ምድብ ቂርቆስ ክፍል';
+                        document.getElementById('samuelHeader').innerHTML = '<i class="fas fa-users"></i> ማዕከላዊያን ክፍል';
+                        document.getElementById('yaredHeader').innerHTML = '<i class="fas fa-graduation-cap"></i> ወጣት ክፍል';
+                    }
+                });
+            });
+            // Initial translation for headers
+            if (currentLang === 'en') {
+                document.getElementById('kircosHeader').innerHTML = '<i class="fas fa-child"></i> Kircos Classes';
+                document.getElementById('samuelHeader').innerHTML = '<i class="fas fa-users"></i> Central Classes';
+                document.getElementById('yaredHeader').innerHTML = '<i class="fas fa-graduation-cap"></i> Youth Classes';
+            }
+        });
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - የመሠረተ ሕይወት ሰንበት ት/ቤት</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --color-primary: #FF5722;   /* New: Deep Orange */
+            --color-secondary: #212121;  /* New: Near Black Accent */
+            --color-white: #ffffff;
+            --color-light-gray: #FAFAFA; /* New: Very Light Off-White Background */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--color-light-gray);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-header h1 {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        /* Login Specific Styles */
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            background-color: var(--color-white);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .login-container h2 {
+            font-size: 1.8em;
+            color: var(--color-primary);
+            margin-bottom: 25px;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn { 
+            padding: 12px 15px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        .btn-primary { 
+            background-color: var(--color-primary); 
+            color: var(--color-white); 
+        }
+        .btn-primary:hover { 
+            background-color: #E64A19; /* Darker Orange */
+        }
+        
+        .error-message {
+            color: #D32F2F; /* Red color */
+            margin-top: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <i class="fas fa-school"></i>
+            <h1>የመሠረተ ሕይወት ሰንበት ት/ቤት</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="login-container">
+            <h2>System Login</h2>
+            <form id="loginForm" class="login-form">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div id="errorMessage" class="error-message"></div>
+            </form>
+            <p style="margin-top: 15px; font-size: 0.85em; color: #777;">
+                Use your credentials to access the system.
+            </p>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            // User-provided credentials and roles
+            const USERS = {
+                // Main School Admin
+                'mhssadmin': { password: 'mhss012122', role: 'mhssadmin' },
+                // System Admin
+                'admin': { password: 'admin012122', role: 'admin' }
+            };
+
+            const user = USERS[username];
+
+            if (user && password === user.password) {
+                // Set flags and role in localStorage
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userRole', user.role); 
+                
+                errorMessage.textContent = '';
+                
+                // Redirect to the main page
+                window.location.href = 'dashboard.html';
+            } else {
+                errorMessage.textContent = 'Invalid username or password. Please try again.';
+            }
+        });
+        
+        // Check if the user is already logged in and redirect them to ashboard.html
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- SECURITY CHECK ---
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // --- Configuration ---
+
+    // 1. Class-to-Prefix Mapping (For Auto-ID Generation)
+    const CLASS_MAP = {
+        'ምድብ ቂርቆስ ፩': 'K1',
+        'ምድብ ቂርቆስ ፪': 'K2',
+        'ምድብ ቂርቆስ ፫': 'K3',
+        'ምድብ ሳሙኤል ፩': 'S1',
+        'ምድብ ሳሙኤል ፪': 'S2',
+        'ምድብ እስጢፋኖስ': 'E1',
+        'ምድብ ቅዱስ ያሬድ ፩': 'W1',
+        'ምድብ ቅዱስ ያሬድ ፪': 'W2'
+    };
+
+    // 2. Multi-Language Dictionary (Simplified Mock-up)
+    const DICTIONARY = {
+        'am': {
+            'app_title': 'የመሠረተ ሕይወት ሰንበት ት/ቤት',
+            'class_title_suffix': ' ክፍል',
+            'add_student_title': 'ተማሪ መጨመሪያ',
+            'mark_attendance': 'መገኘት መመዝገብ',
+            'full_name': 'የተማሪ ሙሉ ስም',
+            'nickname': 'የተማሪ ቅጽል ስም',
+            'select_gender': 'ፆታ ይምረጡ',
+            'date_of_birth': 'የትውልድ ቀን',
+            'student_phone': 'የተማሪ ስልክ ቁጥር',
+            'mother_name': 'የእናት ሙሉ ስም',
+            'mother_phone': 'የእናት ስልክ ቁጥር',
+            'father_name': 'የአባት ሙሉ ስም',
+            'father_phone': 'የአባት ስልክ ቁጥር',
+            'parent_info': 'የወላጅ መረጃ',
+            'emergency_medical': 'ድንገተኛ/ሕክምና',
+            'emergency_contact': 'የድንገተኛ አድራሻ',
+            'contact_phone': 'ስልክ ቁጥር',
+            'medical_notes': 'የሕክምና ማስታወሻዎች',
+            'total_students': 'ጠቅላላ ተማሪዎች',
+            'present': 'የቀረ',
+            'absent': 'የጎደለ',
+            'attendance_rate': 'የመገኘት መጠን',
+            'id': 'መለያ ቁጥር',
+            'student_name': 'የተማሪ ስም',
+            'status': 'ሁኔታ',
+            'actions': 'ድርጊቶች',
+            'edit': 'አስተካክል',
+            'delete': 'ሰርዝ',
+            'present_btn': 'ቀረ',
+            'absent_btn': 'ጎደለ',
+            'save_student': 'ተማሪ አስቀምጥ',
+            'edit_student': 'የተማሪ መረጃ ማስተካከያ'
+        },
+        'en': {
+            'app_title': 'MHS Sunday School',
+            'class_title_suffix': ' Class',
+            'add_student_title': 'Student Registration',
+            'mark_attendance': 'Mark Attendance',
+            'full_name': 'Student Full Name',
+            'nickname': 'Nickname',
+            'select_gender': 'Select Gender',
+            'date_of_birth': 'Date of Birth',
+            'student_phone': 'Student Phone',
+            'mother_name': 'Mother Full Name',
+            'mother_phone': 'Mother Phone',
+            'father_name': 'Father Full Name',
+            'father_phone': 'Father Phone',
+            'parent_info': 'Parent Information',
+            'emergency_medical': 'Emergency/Medical',
+            'emergency_contact': 'Emergency Contact',
+            'contact_phone': 'Contact Phone',
+            'medical_notes': 'Medical Notes/Allergies',
+            'total_students': 'Total Students',
+            'present': 'Present',
+            'absent': 'Absent',
+            'attendance_rate': 'Attendance Rate',
+            'id': 'ID',
+            'student_name': 'Student Name',
+            'status': 'Status',
+            'actions': 'Actions',
+            'edit': 'Edit',
+            'delete': 'Delete',
+            'present_btn': 'Present',
+            'absent_btn': 'Absent',
+            'save_student': 'Save Student',
+            'edit_student': 'Edit Student Data'
+        }
+    };
+    
+    // --- Global Variables ---
+    let currentClass = new URLSearchParams(window.location.search).get('class');
+    let classPrefix = CLASS_MAP[currentClass] || 'XX';
+    let currentLang = localStorage.getItem('currentLang') || 'am';
+    
+    // Simulate data storage using localStorage
+    function getStudents() {
+        const stored = localStorage.getItem('mhssStudents');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    function saveStudents(studentsArray) {
+        localStorage.setItem('mhssStudents', JSON.stringify(studentsArray));
+    }
+
+    let allStudents = getStudents();
+    let studentsInCurrentClass = allStudents.filter(s => s.class === currentClass);
+
+
+    // --- DOM Elements ---
+    const studentListBody = document.getElementById('studentListBody');
+    const addStudentForm = document.getElementById('addStudentForm');
+    const studentFormModal = document.getElementById('studentFormModal');
+    const studentDetailsModal = document.getElementById('studentDetailsModal');
+    const studentDetailsContent = document.getElementById('studentDetailsContent');
+    const modalTitle = document.getElementById('modalTitle');
+    const submitButton = document.getElementById('submitButton');
+    const studentIdToEdit = document.getElementById('studentIdToEdit');
+    const currentClassTitle = document.getElementById('currentClassTitle');
+    const photoInput = document.getElementById('studentPhoto');
+    const photoFileName = document.getElementById('photoFileName');
+    const currentStudentPhoto = document.getElementById('currentStudentPhoto');
+    const generateIdCardBtn = document.getElementById('generateIdCardBtn');
+    const idCardModal = document.getElementById('idCardModal');
+    const idCardContent = document.getElementById('idCardContent');
+
+
+    // Stats
+    const totalStudentsEl = document.getElementById('totalStudents');
+    const presentCountEl = document.getElementById('presentCount');
+    const absentCountEl = document.getElementById('absentCount');
+    const attendanceRateEl = document.getElementById('attendanceRate');
+
+    // Language Toggle
+    const langToggleContainer = document.getElementById('language-toggle');
+
+    // --- Core Functions ---
+
+    // Generates a new Student ID (e.g., K1001, S2005)
+    function getNextId(prefix) {
+        const highestId = allStudents
+            .filter(s => s.id && s.id.startsWith(prefix))
+            .map(s => parseInt(s.id.replace(prefix, '')))
+            .reduce((max, current) => Math.max(max, current), 0);
+        
+        return prefix + (highestId + 1).toString().padStart(3, '0');
+    }
+
+    function updateStats() {
+        const total = studentsInCurrentClass.length;
+        const present = studentsInCurrentClass.filter(s => s.status === 'Present').length;
+        const absent = total - present;
+        const rate = total > 0 ? ((present / total) * 100).toFixed(0) : 0;
+
+        totalStudentsEl.textContent = total;
+        presentCountEl.textContent = present;
+        absentCountEl.textContent = absent;
+        attendanceRateEl.textContent = `${rate}%`;
+    }
+
+    function renderStudents() {
+        studentListBody.innerHTML = ''; // Clear existing list
+        const lang = currentLang;
+
+        studentsInCurrentClass.forEach(student => {
+            const statusClass = student.status === 'Present' ? 'btn-present' : 'btn-absent';
+            const statusIcon = student.status === 'Present' ? 'fa-check' : 'fa-times';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${student.id}</td>
+                <td>
+                    <span class="student-name-link" data-id="${student.id}">${student.name}</span>
+                </td>
+                <td>
+                    <button class="btn status-toggle ${statusClass}" data-id="${student.id}" title="${student.status}">
+                        <i class="fas ${statusIcon}"></i>
+                    </button>
+                </td>
+                <td class="action-btns">
+                    <button class="btn btn-edit" data-id="${student.id}"><i class="fas fa-edit"></i> ${DICTIONARY[lang].edit}</button>
+                    <button class="btn btn-delete" data-id="${student.id}"><i class="fas fa-trash-alt"></i> ${DICTIONARY[lang].delete}</button>
+                </td>
+            `;
+            studentListBody.appendChild(row);
+        });
+
+        updateStats();
+    }
+    
+    function showDetails(student) {
+        const lang = currentLang;
+        // Simple detail view rendering - MODIFIED to swap label and value
+        studentDetailsContent.innerHTML = `
+            <div class="detail-row"><strong>${student.id}</strong> <span>${DICTIONARY[lang].id}</span></div>
+            <div class="detail-row"><strong>${student.name}</strong> <span>${DICTIONARY[lang].full_name}</span></div>
+            <div class="detail-row"><strong>${student.nickname || '-'}</strong> <span>${DICTIONARY[lang].nickname}</span></div>
+            <div class="detail-row"><strong>${student.gender}</strong> <span>${DICTIONARY[lang].select_gender}</span></div>
+            <div class="detail-row"><strong>${student.dob}</strong> <span>${DICTIONARY[lang].date_of_birth}</span></div>
+            <div class="detail-row"><strong>${student.studentPhone || '-'}</strong> <span>${DICTIONARY[lang].student_phone}</span></div>
+            
+            <h3>${DICTIONARY[lang].parent_info}</h3>
+            <div class="detail-row"><strong>${student.motherName || '-'}</strong> <span>${DICTIONARY[lang].mother_name}</span></div>
+            <div class="detail-row"><strong>${student.motherPhone || '-'}</strong> <span>${DICTIONARY[lang].mother_phone}</span></div>
+            <div class="detail-row"><strong>${student.fatherName || '-'}</strong> <span>${DICTIONARY[lang].father_name}</span></div>
+            <div class="detail-row"><strong>${student.fatherPhone || '-'}</strong> <span>${DICTIONARY[lang].father_phone}</span></div>
+            
+            <h3>${DICTIONARY[lang].emergency_medical}</h3>
+            <div class="detail-row"><strong>${student.emergencyContactName || '-'}</strong> <span>${DICTIONARY[lang].emergency_contact}</span></div>
+            <div class="detail-row"><strong>${student.emergencyContactPhone || '-'}</strong> <span>${DICTIONARY[lang].contact_phone}</span></div>
+            <div class="detail-row"><strong>${student.medicalNotes || '-'}</strong> <span>${DICTIONARY[lang].medical_notes}</span></div>
+        `;
+        document.getElementById('detailStudentName').textContent = student.name + (lang === 'en' ? ' Details' : ' መረጃ');
+        document.getElementById('detailPhoto').src = student.photoUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAABsklEQVR4nO2bv0oDQRCHzy4Q7B34A9zFxc7P4g1kL4K6p5A7sWwEGyvF0kQhWCgoYiGIYGGQhfgpYt7MbrL+I+L1zTjY8IELszM7/71t7k12K61Wq7Wd0K8B4mGzWCzW0k7oVwAJs9ksXm9dYf4FmJ0W3eGg7oV+C5gq73QGgwv9JmCq+NsdDM68A1hW9gUDw+uF31mHqQ+9FzBd4VfP5r0fMCz92/U5GzAr/X/f52zAaHif9rMbMAm9Z62vYcBM6D3rP28z/0T8V3iN9WbYh98L7xW+Yw3gA0L8WwX/WwWf/wD4WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WwWf/wD4WwWf/wA8H8E3i/7Gk7oX+jrgH0nEZrNarSfgXwK+r0lM+f7vBf8G/hQWw9TjP/8AAAAASUVORK5CYII='; // Default image mock
+        document.getElementById('generateIdCardBtn').setAttribute('data-id', student.id);
+        studentDetailsModal.style.display = 'block';
+    }
+    
+    // Generates a mock ID card view
+    function showIdCard(student) {
+        const lang = currentLang;
+
+        idCardContent.innerHTML = `
+            <div class="id-card-container">
+                <div class="id-card-header">
+                    <h4>${DICTIONARY[lang].app_title}</h4>
+                    <p>${currentClass}</p>
+                </div>
+                <div class="id-card-body">
+                    <img class="id-card-photo" src="${student.photoUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAABsklEQVR4nO2bv0oDQRCHzy4Q7B34A9zFxc7P4g1kL4K6p5A7sWwEGyvF0kQhWCgoYiGIYGGQhfgpYt7MbrL+I+L1zTjY8IELszM7/71t7k12K61Wq7Wd0K8B4mGzWCzW0k7oVwAJs9ksXm9dYf4FmJ0W3eGg7oV+C5gq73QGgwv9JmCq+NsdDM68A1hW9gUDw+uF31mHqQ+9FzBd4VfP5r0fMCz92/U5GzAr/X/f52zAaHif9rMbMAm9Z62vYcBM6D3rP28z/0T8V3iN9WbYh98L7xW+Yw3gA0L8WwX/WwWf/wD4WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WyL+/wLgA0L8WwX/WwWf/wD4WwWf/wA8H8E3i/7Gk7oX+jrgH0nEZrNarSfgXwK+r0lM+f7vBf8G/hQWw9TjP/8AAAAASUVORK5CYII='}" alt="Student Photo">
+                    <div class="id-card-info">
+                        <div><strong>${student.name}</strong><span>${DICTIONARY[lang].full_name}</span></div>
+                        <div><strong>${student.nickname || '-'}</strong><span>${DICTIONARY[lang].nickname}</span></div>
+                        <div><strong>${student.gender}</strong><span>${DICTIONARY[lang].select_gender}</span></div>
+                        <div><strong>${student.id}</strong><span>${DICTIONARY[lang].id}</span></div>
+                        <div><strong>${student.studentPhone || '-'}</strong><span>${DICTIONARY[lang].student_phone}</span></div>
+                        <div><strong>${student.emergencyContactPhone || '-'}</strong><span>${DICTIONARY[lang].emergency_contact} Phone</span></div>
+                    </div>
+                </div>
+                <div class="id-card-id-large">${student.id}</div> 
+                <div class="id-card-footer">MHSS Student ID</div>
+            </div>
+        `;
+        idCardModal.style.display = 'block';
+    }
+
+
+    function translateUI(lang) {
+        // Update header and navigation
+        document.getElementById('appTitle').textContent = DICTIONARY[lang].app_title;
+        document.querySelector('title').textContent = DICTIONARY[lang].app_title + DICTIONARY[lang].class_title_suffix;
+        currentClassTitle.textContent = currentClass;
+        
+        // Update main buttons
+        document.getElementById('openStudentModalBtn').innerHTML = `<i class="fas fa-plus-circle"></i> ${DICTIONARY[lang].add_student_title}`;
+        document.querySelector('.statistics-section h2').innerHTML = `<i class="fas fa-chart-bar"></i> ${DICTIONARY[lang].total_students}`;
+        document.querySelector('.attendance-section h2').innerHTML = `<i class="fas fa-users"></i> ${DICTIONARY[lang].student_name} ${DICTIONARY[lang].actions}`;
+
+        // Update stat box labels
+        document.getElementById('totalStudentsBox').innerHTML = `${DICTIONARY[lang].total_students}: <span id="totalStudents">${totalStudentsEl.textContent}</span>`;
+        document.getElementById('presentCountBox').innerHTML = `${DICTIONARY[lang].present} Today: <span id="presentCount">${presentCountEl.textContent}</span>`;
+        document.getElementById('absentCountBox').innerHTML = `${DICTIONARY[lang].absent} Today: <span id="absentCount">${absentCountEl.textContent}</span>`;
+        document.getElementById('attendanceRateBox').innerHTML = `${DICTIONARY[lang].attendance_rate}: <span id="attendanceRate">${attendanceRateEl.textContent}</span>`;
+        
+        // Update table headers
+        document.getElementById('headerID').textContent = DICTIONARY[lang].id;
+        document.getElementById('headerName').textContent = DICTIONARY[lang].student_name;
+        document.getElementById('headerStatus').textContent = DICTIONARY[lang].status;
+        document.getElementById('headerActions').textContent = DICTIONARY[lang].actions;
+        
+        // Update modal titles
+        document.getElementById('modalTitle').innerHTML = `<i class="fas fa-user-plus"></i> ${studentIdToEdit.value ? DICTIONARY[lang].edit_student : DICTIONARY[lang].add_student_title}`;
+        document.getElementById('submitButton').innerHTML = `<i class="fas fa-save"></i> ${studentIdToEdit.value ? DICTIONARY[lang].edit_student : DICTIONARY[lang].save_student}`;
+
+        // Update form placeholders (partial update for example)
+        document.getElementById('studentName').placeholder = DICTIONARY[lang].full_name;
+        document.getElementById('nickname').placeholder = DICTIONARY[lang].nickname;
+        document.getElementById('motherName').placeholder = DICTIONARY[lang].mother_name;
+        document.getElementById('fatherName').placeholder = DICTIONARY[lang].father_name;
+
+        // Rerender the student list to update the 'Edit'/'Delete' button text
+        renderStudents(); 
+    }
+
+
+    // --- Event Listeners ---
+    
+    // 1. Language Toggle
+    if (langToggleContainer) {
+        langToggleContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-lang');
+            if (btn) {
+                document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentLang = btn.dataset.lang;
+                localStorage.setItem('currentLang', currentLang);
+                translateUI(currentLang);
+            }
+        });
+    }
+
+    // 2. Add/Edit Student Form Submission
+    addStudentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const isEditing = !!studentIdToEdit.value;
+        let student;
+        let alertMessage;
+
+        const formData = {
+            name: document.getElementById('studentName').value.trim(),
+            nickname: document.getElementById('nickname').value.trim(),
+            gender: document.getElementById('gender').value,
+            dob: document.getElementById('dob').value,
+            studentPhone: document.getElementById('studentPhone').value,
+            motherName: document.getElementById('motherName').value,
+            motherPhone: document.getElementById('motherPhone').value,
+            fatherName: document.getElementById('fatherName').value,
+            fatherPhone: document.getElementById('fatherPhone').value,
+            emergencyContactName: document.getElementById('emergencyContactName').value,
+            emergencyContactPhone: document.getElementById('emergencyContactPhone').value,
+            medicalNotes: document.getElementById('medicalNotes').value,
+            class: currentClass,
+            registrationDate: new Date().toISOString().split('T')[0],
+            photoUrl: currentStudentPhoto.src.includes('data:image/') ? currentStudentPhoto.src : null // Stores the base64 or null
+        };
+        
+        if (isEditing) {
+            // Edit existing student
+            const globalIndex = allStudents.findIndex(s => s.id === studentIdToEdit.value);
+            if (globalIndex !== -1) {
+                // Preserve ID and Status, update everything else
+                allStudents[globalIndex] = { ...allStudents[globalIndex], ...formData };
+                alertMessage = `${formData.name} updated successfully!`;
+            }
+        } else {
+            // Add new student
+            const newId = getNextId(classPrefix);
+            student = {
+                id: newId,
+                status: 'Absent', // Default status is Absent
+                ...formData
+            };
+            allStudents.push(student);
+            alertMessage = `${student.name} added successfully with ID: ${newId}`;
+        }
+        
+        saveStudents(allStudents);
+        studentsInCurrentClass = allStudents.filter(s => s.class === currentClass);
+        renderStudents();
+        studentFormModal.style.display = 'none';
+        
+        alert(alertMessage);
+        addStudentForm.reset();
+        studentIdToEdit.value = ''; // Clear ID for next use
+    });
+    
+    // 3. Delegation for Details, Edit, Delete, Status Toggle
+    studentListBody.addEventListener('click', (e) => {
+        const target = e.target.closest('button, .student-name-link');
+        if (!target) return;
+
+        const id = target.dataset.id || target.closest('tr').querySelector('.student-name-link').dataset.id;
+        const studentIndex = allStudents.findIndex(s => s.id === id);
+
+        if (studentIndex === -1) return;
+        const student = allStudents[studentIndex];
+
+        if (target.classList.contains('student-name-link')) {
+             // Open details modal
+             showDetails(student);
+        } else if (target.classList.contains('status-toggle')) {
+            // Toggle status
+            student.status = student.status === 'Present' ? 'Absent' : 'Present';
+            saveStudents(allStudents);
+            studentsInCurrentClass = allStudents.filter(s => s.class === currentClass);
+            renderStudents();
+        } else if (target.classList.contains('btn-edit')) {
+            // Open edit modal and populate fields
+            document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> ${DICTIONARY[currentLang].edit_student}`;
+            document.getElementById('submitButton').innerHTML = `<i class="fas fa-save"></i> Save Changes`;
+            studentIdToEdit.value = student.id;
+
+            // Populate form fields
+            document.getElementById('studentName').value = student.name;
+            document.getElementById('nickname').value = student.nickname || '';
+            document.getElementById('gender').value = student.gender;
+            document.getElementById('dob').value = student.dob;
+            document.getElementById('studentPhone').value = student.studentPhone || '';
+            document.getElementById('motherName').value = student.motherName || '';
+            document.getElementById('motherPhone').value = student.motherPhone || '';
+            document.getElementById('fatherName').value = student.fatherName || '';
+            document.getElementById('fatherPhone').value = student.fatherPhone || '';
+            document.getElementById('emergencyContactName').value = student.emergencyContactName || '';
+            document.getElementById('emergencyContactPhone').value = student.emergencyContactPhone || '';
+            document.getElementById('medicalNotes').value = student.medicalNotes || '';
+            
+            if (student.photoUrl) {
+                 currentStudentPhoto.src = student.photoUrl;
+                 currentStudentPhoto.style.display = 'block';
+                 photoFileName.textContent = 'Existing Photo Loaded';
+            } else {
+                 currentStudentPhoto.style.display = 'none';
+                 photoFileName.textContent = 'No file selected';
+            }
+
+            studentFormModal.style.display = 'block';
+
+        } else if (target.classList.contains('btn-delete')) {
+            if (confirm(`Are you sure you want to delete ${student.name} (${student.id})?`)) {
+                allStudents.splice(studentIndex, 1);
+                saveStudents(allStudents);
+                studentsInCurrentClass = allStudents.filter(s => s.class === currentClass);
+                renderStudents();
+            }
+        }
+    });
+
+    // 4. Photo file change listener (Handles camera/gallery on mobile)
+    photoInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            photoFileName.textContent = this.files[0].name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentStudentPhoto.src = e.target.result;
+                currentStudentPhoto.style.display = 'block';
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            photoFileName.textContent = 'No file selected';
+            currentStudentPhoto.style.display = 'none';
+            currentStudentPhoto.src = '';
+        }
+    });
+
+    // 5. Bulk Actions (Mark All Present/Absent)
+    document.querySelector('.bulk-actions').addEventListener('click', (e) => {
+        let statusToSet = null;
+        if (e.target.closest('.btn-present')) {
+            statusToSet = 'Present';
+        } else if (e.target.closest('.btn-absent')) {
+            statusToSet = 'Absent';
+        }
+
+        if (statusToSet) {
+            studentsInCurrentClass.forEach(s => {
+                s.status = statusToSet;
+                const globalStudent = allStudents.find(a => a.id === s.id);
+                if (globalStudent) globalStudent.status = statusToSet;
+            });
+            
+            saveStudents(allStudents);
+            renderStudents();
+        }
+    });
+    
+    // 6. Generate ID Card Button Handler
+    generateIdCardBtn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const student = allStudents.find(s => s.id === id);
+        if (student) {
+            showIdCard(student);
+            studentDetailsModal.style.display = 'none';
+        } else {
+            alert('Student data not found for ID card generation.');
+        }
+    });
+    
+    // 7. Modal Open/Close handlers
+    document.getElementById('openStudentModalBtn').addEventListener('click', () => {
+        // Reset form for a new student
+        addStudentForm.reset();
+        studentIdToEdit.value = '';
+        document.getElementById('modalTitle').innerHTML = `<i class="fas fa-user-plus"></i> ${DICTIONARY[currentLang].add_student_title}`;
+        document.getElementById('submitButton').innerHTML = `<i class="fas fa-plus-circle"></i> ${DICTIONARY[currentLang].save_student}`;
+        photoFileName.textContent = 'No file selected';
+        currentStudentPhoto.style.display = 'none';
+        currentStudentPhoto.src = '';
+        studentFormModal.style.display = 'block';
+    });
+    
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            studentFormModal.style.display = 'none';
+            studentDetailsModal.style.display = 'none';
+            idCardModal.style.display = 'none';
+        });
+    });
+    
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        if (event.target == studentFormModal) {
+            studentFormModal.style.display = 'none';
+        }
+        if (event.target == studentDetailsModal) {
+            studentDetailsModal.style.display = 'none';
+        }
+        if (event.target == idCardModal) {
+            idCardModal.style.display = 'none';
+        }
+    }
+    
+    // 8. Logout Function
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('currentClass');
+        window.location.href = 'login.html';
+    });
+    
+    // 9. Initial launch of the app
+    if (currentClass) {
+        const activeLangBtn = document.querySelector(`[data-lang="${currentLang}"]`);
+        if(activeLangBtn) {
+            activeLangBtn.classList.add('active');
+        } else {
+            document.querySelector(`[data-lang="am"]`).classList.add('active'); // Default to Amharic if missing
+        }
+        
+        translateUI(currentLang); // Apply initial language
+        document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('en-US'); // Mock date display
+        renderStudents();
+    }
+});
+:root {
+    --color-primary: #1976D2; /* Dark Royal Blue */
+    --color-secondary: #42A5F5; /* Lighter Blue for accents */
+    --color-success: #4CAF50; /* Green for Present */
+    --color-absent: #FF9800; /* Orange - Using Delete Red for Absent button on class page for contrast */
+    --color-delete: #F44336; /* Red (Delete button color) */
+    --color-edit: #FFC107; /* Yellow (Edit button color) */
+    --color-white: #ffffff;
+    --color-light-gray: #f4f4f9;
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--color-light-gray);
+    line-height: 1.6;
+}
+
+.container {
+    padding: 20px;
+    max-width: 600px; /* Constrain width for mobile-first look */
+    margin: 0 auto;
+}
+
+/* --- Language Toggle Style (Shared by Index and Class) --- */
+.language-toggle {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-shrink: 0;
+}
+.btn-lang {
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    font-size: 0.8em;
+}
+.btn-lang.active {
+    opacity: 1;
+    background-color: var(--color-white);
+    color: var(--color-primary);
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.btn-lang:hover:not(.active) {
+    opacity: 0.8;
+}
+
+/* --- Statistics Styling --- */
+.stats-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
+    margin-bottom: 15px; 
+}
+
+/* --- Attendance Table Styling --- */
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.attendance-table th, .attendance-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.attendance-table th {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    font-weight: normal;
+}
+
+.attendance-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+.action-btns {
+    display: flex;
+    gap: 5px;
+}
+
+/* --- ID Card Styling (New Section) --- */
+.id-card-container {
+    width: 300px;
+    height: 450px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin: 20px auto;
+    background-color: var(--color-white);
+    position: relative;
+    text-align: center;
+    color: #333;
+}
+
+.id-card-header, .id-card-footer {
+    padding: 10px;
+    color: var(--color-white);
+    background-color: var(--id-card-color); /* Class-specific color */
+    text-align: center;
+}
+
+.id-card-header h4 {
+    margin: 0;
+    font-size: 1.1em;
+}
+.id-card-header p {
+    margin: 0;
+    font-size: 0.9em;
+    font-weight: 300;
+}
+
+.id-card-body {
+    padding: 15px;
+}
+
+.id-card-photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--id-card-color); /* Class-specific color border */
+    margin-bottom: 10px;
+}
+
+.id-card-info {
+    text-align: left;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.id-card-info div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    border-bottom: 1px dotted #eee;
+    padding-bottom: 2px;
+}
+
+.id-card-info div strong {
+    font-weight: bold;
+    color: #222; /* Value on the left */
+    max-width: 60%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.id-card-info div span {
+    font-size: 0.85em;
+    color: #555; /* Label on the right */
+    text-align: right;
+    max-width: 35%;
+    flex-shrink: 0;
+}
+
+.id-card-id-large {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--id-card-color); /* Class-specific color */
+    margin-top: 10px;
+}
+
+.id-card-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    font-size: 0.8em;
+    padding: 8px;
+}
+
+/* --- Class-specific ID Card Colors --- */
+
+/* Kircos Classes (Green/Teal) */
+.class-K1, .class-K2, .class-K3 { 
+    --id-card-color: #00897B; /* Teal */
+} 
+
+/* Samuel & Estifanos Classes (Orange/Red) */
+.class-S1, .class-S2, .class-E1 { 
+    --id-card-color: #D84315; /* Deep Orange */
+}
+
+/* Yared Classes (Purple/Violet) */
+.class-W1, .class-W2 { 
+    --id-card-color: #6A1B9A; /* Deep Purple */
+}
